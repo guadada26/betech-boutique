@@ -16,6 +16,7 @@ export interface Product {
   badge: string;
   image: string | null;
   availability: string;
+  resellerPrice?: number | null;
   publishHome?: string;
   PUBLICAR_HOME?: string;
   publishDrop?: string;

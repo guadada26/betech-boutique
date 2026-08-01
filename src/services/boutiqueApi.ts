@@ -11,6 +11,8 @@
 
 import type { Category } from '@/types/category';
 import type { Product } from '@/types/product';
+import { cookies } from 'next/headers';
+import { CATALOG_PROFILE_COOKIE, parseCatalogProfile, resolvePriceMode, type PriceMode } from '@/lib/catalogProfile';
 
 // ─── Tipos internos ────────────────────────────────────────────────────────
 
@@ -80,6 +82,76 @@ function normalizeProduct(product: Product): Product {
     return undefined;
   };
 
+  const normalizeKey = (value: string): string =>
+    (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+  const parsedByNormalizedKey = new Map<string, unknown>();
+  for (const [key, value] of Object.entries(source)) {
+    parsedByNormalizedKey.set(normalizeKey(key), value);
+  }
+
+  const parsePriceValue = (value: unknown): number | null => {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const cleaned = value
+      .trim()
+      .replace(/\s+/g, '')
+      .replace(/[^0-9,.-]/g, '');
+
+    if (!cleaned) return null;
+
+    if (cleaned.includes(',') && cleaned.includes('.')) {
+      const withoutDots = cleaned.replace(/\./g, '');
+      const normalized = withoutDots.replace(',', '.');
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    if (cleaned.includes(',')) {
+      const normalized = cleaned.replace(',', '.');
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const pickNumber = (...keys: string[]): number | null => {
+    for (const key of keys) {
+      const raw = source[key];
+      const parsed = parsePriceValue(raw);
+      if (parsed !== null) return parsed;
+    }
+
+    for (const key of keys) {
+      const raw = parsedByNormalizedKey.get(normalizeKey(key));
+      const parsed = parsePriceValue(raw);
+      if (parsed !== null) return parsed;
+    }
+
+    return null;
+  };
+
+  const resellerPrice = pickNumber(
+    'PRECIO_UNITARIO_REVENDEDOR',
+    'precio_unitario_revendedor',
+    'precioUnitarioRevendedor',
+    'precioRevendedor',
+    'PRECIO_REVENDEDOR',
+    'PRECIO_REVENDEDORES'
+  );
+
   return {
     ...product,
     // Por ahora las imágenes no se conectan al Master: se usa placeholder del frontend.
@@ -96,7 +168,33 @@ function normalizeProduct(product: Product): Product {
     descriptionExtended: pickText('descriptionExtended', 'DESCRIPCION_AMPLIADA', 'descripcionAmpliada'),
     availableColors: pickText('availableColors', 'COLORES_DISPONIBLES', 'coloresDisponibles'),
     measurements: pickText('measurements', 'MEDIDAS', 'medidas'),
+    resellerPrice,
   };
+}
+
+function applyPriceMode(product: Product, priceMode: PriceMode): Product {
+  if (priceMode !== 'reseller') {
+    return product;
+  }
+
+  if (typeof product.resellerPrice === 'number' && Number.isFinite(product.resellerPrice)) {
+    return {
+      ...product,
+      price: product.resellerPrice,
+    };
+  }
+
+  return product;
+}
+
+function resolveCurrentPriceMode(fallback: PriceMode = 'public'): PriceMode {
+  try {
+    const cookieValue = cookies().get(CATALOG_PROFILE_COOKIE)?.value;
+    const profile = parseCatalogProfile(cookieValue);
+    return resolvePriceMode(profile);
+  } catch {
+    return fallback;
+  }
 }
 
 function isPublicActiveProduct(product: Product): boolean {
@@ -222,15 +320,17 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 /**
  * Devuelve todos los productos activos/disponibles del Master.
  */
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(options?: { priceMode?: PriceMode }): Promise<Product[]> {
+  const priceMode = options?.priceMode ?? resolveCurrentPriceMode('public');
   const products = await fetchFromApi<Product>({ resource: 'products' });
-  return products.filter(isPublicActiveProduct).map(normalizeProduct);
+  return products.filter(isPublicActiveProduct).map(normalizeProduct).map((product) => applyPriceMode(product, priceMode));
 }
 
 /**
  * Devuelve los productos de una categoría específica (filtrado en el servidor).
  */
-export async function getProductsByCategory(slug: string): Promise<Product[]> {
+export async function getProductsByCategory(slug: string, options?: { priceMode?: PriceMode }): Promise<Product[]> {
+  const priceMode = options?.priceMode ?? resolveCurrentPriceMode('public');
   const safeSlug = normalizeText(slug);
   if (!isSafeCategorySlug(safeSlug)) {
     throw new Error('CATEGORY_INVALID_SLUG');
@@ -245,7 +345,8 @@ export async function getProductsByCategory(slug: string): Promise<Product[]> {
     const byCategoryEndpoint = response.data
       .filter(isPublicActiveProduct)
       .filter((product) => categoriesMatch(product.category || '', safeSlug))
-      .map(normalizeProduct);
+      .map(normalizeProduct)
+      .map((product) => applyPriceMode(product, priceMode));
 
     if (byCategoryEndpoint.length > 0) {
       if (shouldLogDevDiagnostics()) {
@@ -265,7 +366,7 @@ export async function getProductsByCategory(slug: string): Promise<Product[]> {
 
     // Fallback robusto: algunas categorías (ej. tv-audio, heladeras-freezer)
     // pueden venir vacías desde el endpoint filtrado aunque existan en products.
-    const allProducts = await getProducts();
+    const allProducts = await getProducts({ priceMode });
     const fallbackProducts = allProducts.filter((product) =>
       categoriesMatch(product.category || '', safeSlug)
     );
@@ -303,11 +404,11 @@ function normalizeSku(value: string): string {
   return (value || '').trim().toUpperCase();
 }
 
-export async function getProductBySku(sku: string): Promise<Product | null> {
+export async function getProductBySku(sku: string, options?: { priceMode?: PriceMode }): Promise<Product | null> {
   const target = normalizeSku(sku);
   if (!target) return null;
 
-  const products = await getProducts();
+  const products = await getProducts(options);
   return products.find((product) => normalizeSku(product.sku) === target) ?? null;
 }
 

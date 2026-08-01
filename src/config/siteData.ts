@@ -40,6 +40,28 @@ export const siteConfig = {
     },
   },
 
+  // Hero para perfil revendedores (reemplazar imágenes por banner gremio)
+  heroResellers: {
+    topText: 'TECNOLOGIA PARA REVENDEDORES',
+    title: 'Catalogo exclusivo\npara revendedores',
+    subtitle: 'Mismo portfolio, precios para tu canal y actualizacion constante desde Master.',
+    cta1: {
+      text: 'Explorar categorias',
+      href: '#categorias',
+      style: 'primary',
+    },
+    cta2: {
+      text: 'Descubrir el Drop',
+      href: '#drop',
+      style: 'secondary',
+    },
+    image: {
+      desktop: '/images/hero/hero-home-desktop.jpeg',
+      mobile: '/images/hero/hero-home-mobile.jpeg',
+      alt: 'Banner de catalogo para revendedores',
+    },
+  },
+
   // Categorías
   categories: [
     {
