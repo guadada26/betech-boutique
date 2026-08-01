@@ -56,8 +56,8 @@ export const siteConfig = {
       style: 'secondary',
     },
     image: {
-      desktop: '/images/hero/hero-home-desktop.jpeg',
-      mobile: '/images/hero/hero-home-mobile.jpeg',
+      desktop: '/images/hero/hero-revendedores-desktop.jpeg',
+      mobile: '/images/hero/hero-revendedores-desktop.jpeg',
       alt: 'Banner de catalogo para revendedores',
     },
   },
