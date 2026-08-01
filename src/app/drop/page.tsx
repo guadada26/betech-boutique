@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import { existsSync } from 'fs';
-import { join } from 'path';
 import CategoryBanner from '@/components/CategoryBanner';
 import CategoryProductGrid from '@/components/CategoryProductGrid';
 import Benefits from '@/components/Benefits';
@@ -55,22 +53,7 @@ function isPublishedForDrop(product: Product): boolean {
 }
 
 function resolveDropBannerSrc(): string | null {
-  const candidates = [
-    '/images/drop/drop-banner.jpg',
-    '/images/drop/drop-banner.jpeg',
-    '/images/drop/editorial/drop-banner.jpg',
-    '/images/drop/editorial/drop-banner.jpeg',
-    '/images/drop/editorial/cover.jpg',
-  ];
-
-  for (const candidate of candidates) {
-    const absolutePath = join(process.cwd(), 'public', candidate.replace(/^\//, '').replace(/\//g, '\\'));
-    if (existsSync(absolutePath)) {
-      return candidate;
-    }
-  }
-
-  return null;
+  return '/images/drop/editorial/drop-banner.jpeg';
 }
 
 export default async function DropPage() {
