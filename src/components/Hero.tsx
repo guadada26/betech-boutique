@@ -1,13 +1,10 @@
 import { siteConfig } from '@/config/siteData';
 import { cookies } from 'next/headers';
-import { CATALOG_PROFILE_COOKIE, isResellerProfileAuthorized, RESELLER_AUTH_COOKIE } from '@/lib/catalogProfile';
+import { CATALOG_PROFILE_COOKIE, parseCatalogProfile } from '@/lib/catalogProfile';
 
 export default function Hero() {
-  const profileCookie = cookies().get(CATALOG_PROFILE_COOKIE)?.value;
-  const authCookie = cookies().get(RESELLER_AUTH_COOKIE)?.value;
-  const secret = (process.env.RESELLER_AUTH_SECRET || process.env.RESELLER_ACCESS_KEY || '').trim();
-  const isReseller = isResellerProfileAuthorized(profileCookie, authCookie, secret);
-  const hero = isReseller ? siteConfig.heroResellers || siteConfig.hero : siteConfig.hero;
+  const profile = parseCatalogProfile(cookies().get(CATALOG_PROFILE_COOKIE)?.value);
+  const hero = profile === 'revendedores' ? siteConfig.heroResellers || siteConfig.hero : siteConfig.hero;
 
   return (
     <section className="relative w-full overflow-hidden">

@@ -14,8 +14,7 @@ import type { Product } from '@/types/product';
 import { cookies } from 'next/headers';
 import {
   CATALOG_PROFILE_COOKIE,
-  isResellerProfileAuthorized,
-  RESELLER_AUTH_COOKIE,
+  parseCatalogProfile,
   resolvePriceMode,
   type PriceMode,
 } from '@/lib/catalogProfile';
@@ -196,10 +195,8 @@ function applyPriceMode(product: Product, priceMode: PriceMode): Product {
 function resolveCurrentPriceMode(fallback: PriceMode = 'public'): PriceMode {
   try {
     const profileCookie = cookies().get(CATALOG_PROFILE_COOKIE)?.value;
-    const authCookie = cookies().get(RESELLER_AUTH_COOKIE)?.value;
-    const secret = (process.env.RESELLER_AUTH_SECRET || process.env.RESELLER_ACCESS_KEY || '').trim();
-    const isAuthorized = isResellerProfileAuthorized(profileCookie, authCookie, secret);
-    return resolvePriceMode(isAuthorized ? 'revendedores' : 'publico');
+    const profile = parseCatalogProfile(profileCookie);
+    return resolvePriceMode(profile);
   } catch {
     return fallback;
   }
