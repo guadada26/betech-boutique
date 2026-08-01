@@ -12,7 +12,13 @@
 import type { Category } from '@/types/category';
 import type { Product } from '@/types/product';
 import { cookies } from 'next/headers';
-import { CATALOG_PROFILE_COOKIE, parseCatalogProfile, resolvePriceMode, type PriceMode } from '@/lib/catalogProfile';
+import {
+  CATALOG_PROFILE_COOKIE,
+  isResellerProfileAuthorized,
+  RESELLER_AUTH_COOKIE,
+  resolvePriceMode,
+  type PriceMode,
+} from '@/lib/catalogProfile';
 
 // ─── Tipos internos ────────────────────────────────────────────────────────
 
@@ -189,9 +195,11 @@ function applyPriceMode(product: Product, priceMode: PriceMode): Product {
 
 function resolveCurrentPriceMode(fallback: PriceMode = 'public'): PriceMode {
   try {
-    const cookieValue = cookies().get(CATALOG_PROFILE_COOKIE)?.value;
-    const profile = parseCatalogProfile(cookieValue);
-    return resolvePriceMode(profile);
+    const profileCookie = cookies().get(CATALOG_PROFILE_COOKIE)?.value;
+    const authCookie = cookies().get(RESELLER_AUTH_COOKIE)?.value;
+    const secret = (process.env.RESELLER_AUTH_SECRET || process.env.RESELLER_ACCESS_KEY || '').trim();
+    const isAuthorized = isResellerProfileAuthorized(profileCookie, authCookie, secret);
+    return resolvePriceMode(isAuthorized ? 'revendedores' : 'publico');
   } catch {
     return fallback;
   }
