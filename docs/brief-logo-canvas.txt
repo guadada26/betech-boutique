@@ -1,0 +1,49 @@
+Necesito rehacer el logo de BETECH para uso web.
+
+El archivo anterior salio mal porque quedo exportado en una mesa cuadrada enorme, con demasiado aire alrededor, y en la web se ve como un bloque en vez de un logo integrado.
+
+Quiero estas caracteristicas exactas:
+
+1. Logo horizontal principal
+- Formato ideal: SVG
+- Tambien exportar PNG
+- Fondo 100% transparente
+- Mesa horizontal real, no cuadrada
+- Tamano de mesa recomendado: 1200 x 300 px
+- El logo debe ocupar casi todo el ancho util
+- Dejar poco margen arriba y abajo
+- No dejar un gran espacio vacio alrededor
+- Debe funcionar bien en header web
+
+2. Variante para fondo oscuro
+- Hacer una version blanca o clara del logo horizontal
+- Fondo transparente
+- Mismo encuadre horizontal
+- Lista para usar sobre fotos oscuras o header negro
+
+3. Isotipo
+- Archivo separado del isotipo
+- Fondo transparente
+- Mesa cuadrada
+- Tamano master: 1024 x 1024 px
+- El isotipo debe quedar mas grande y mas centrado
+- Sin tanto aire vacio alrededor
+- Pensado para favicon, app icon y mobile
+
+4. Exportaciones necesarias
+- logo-betech-horizontal.svg
+- logo-betech-horizontal.png
+- logo-betech-horizontal-white.svg
+- logo-betech-horizontal-white.png
+- logo-betech-icono.png
+
+5. Estilo
+- Mantener look limpio, premium y minimalista
+- No agregar fondo solido
+- No entregar composiciones metidas dentro de un cuadrado gigante
+- El entregable tiene que venir ya bien recortado para integrarlo directo en una web
+
+6. Problema a evitar
+- No quiero un PNG o SVG con el logo chiquito dentro de una mesa enorme
+- No quiero bordes vacios excesivos
+- El logo horizontal tiene que verse realmente horizontal y listo para navbar/header
